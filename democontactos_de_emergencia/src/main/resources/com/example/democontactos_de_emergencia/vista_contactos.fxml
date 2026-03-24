@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox alignment="CENTER" spacing="10" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.democontactos_de_emergencia.controlador.Controller">
+
+    <padding>
+        <Insets bottom="20" left="20" right="20" top="20" />
+    </padding>
+
+    <TextField fx:id="txtNombre" promptText="Nombre completo" />
+    <TextField fx:id="txtTelefono" promptText="Teléfono (10 dígitos)" />
+
+    <ComboBox fx:id="cbParentesco" prefWidth="400" promptText="Parentesco" />
+
+    <HBox alignment="CENTER" spacing="10">
+        <Button onAction="#agregarContacto" text="Agregar" />
+        <Button onAction="#buscarContacto" text="Buscar" />
+        <Button onAction="#actualizarContacto" text="Actualizar" />
+        <Button onAction="#limpiarCampos" text="Limpiar" />
+        <Button onAction="#eliminarContacto" text="Eliminar" />
+    </HBox>
+
+    <HBox alignment="CENTER" spacing="10" />
+
+    <Label text="Lista :" />
+    <ListView fx:id="lvContactos" VBox.vgrow="ALWAYS" />
+    <Label fx:id="lblMsg" />
+
+</VBox>
