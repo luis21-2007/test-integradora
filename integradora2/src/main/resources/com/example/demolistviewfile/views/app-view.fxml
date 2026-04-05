@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import javafx.geometry.*?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
-<?import javafx.geometry.Insets?>
 
 <VBox prefHeight="600.0" prefWidth="700.0" spacing="15" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.demolistviewfile.controllers.AppController">
     <padding>
-        <Insets top="20" right="20" bottom="20" left="20"/>
+        <Insets bottom="20" left="20" right="20" top="20" />
     </padding>
 
     <children>
-        <Label text="Gestión de Inventario - Tiendita Local" style="-fx-font-size: 20; -fx-font-weight: bold;" />
+        <Label style="-fx-font-size: 20; -fx-font-weight: bold;" text="Gestión de Inventario - Tiendita Local" />
 
         <GridPane hgap="10" vgap="10">
             <columnConstraints>
@@ -21,36 +21,42 @@
             </columnConstraints>
 
             <children>
-                <Label text="Código:" GridPane.rowIndex="0" GridPane.columnIndex="0" />
-                <TextField fx:id="txtCodigo" GridPane.rowIndex="0" GridPane.columnIndex="1" />
+                <Label text="Código:" GridPane.columnIndex="0" GridPane.rowIndex="0" />
+                <TextField fx:id="txtCodigo" GridPane.columnIndex="1" GridPane.rowIndex="0" />
 
-                <Label text="Nombre:" GridPane.rowIndex="0" GridPane.columnIndex="2" />
-                <TextField fx:id="txtNombre" GridPane.rowIndex="0" GridPane.columnIndex="3" />
+                <Label text="Nombre:" GridPane.columnIndex="2" GridPane.rowIndex="0" />
+                <TextField fx:id="txtNombre" GridPane.columnIndex="3" GridPane.rowIndex="0" />
 
-                <Label text="Precio:" GridPane.rowIndex="1" GridPane.columnIndex="0" />
-                <TextField fx:id="txtPrecio" GridPane.rowIndex="1" GridPane.columnIndex="1" />
+                <Label text="Precio:" GridPane.columnIndex="0" GridPane.rowIndex="1" />
+                <TextField fx:id="txtPrecio" GridPane.columnIndex="1" GridPane.rowIndex="1" />
 
-                <Label text="Stock:" GridPane.rowIndex="1" GridPane.columnIndex="2" />
-                <TextField fx:id="txtStock" GridPane.rowIndex="1" GridPane.columnIndex="3" />
+                <Label text="Stock:" GridPane.columnIndex="2" GridPane.rowIndex="1" />
+                <TextField fx:id="txtStock" GridPane.columnIndex="3" GridPane.rowIndex="1" />
 
-                <Label text="Categoría:" GridPane.rowIndex="2" GridPane.columnIndex="0" />
-                <TextField fx:id="txtCategoria" promptText="Ej: Lácteos, Limpieza..." GridPane.rowIndex="2" GridPane.columnIndex="1" />
+                <Label text="Categoría:" GridPane.columnIndex="0" GridPane.rowIndex="2" />
+                <ComboBox fx:id="cmbCategoria" maxWidth="Infinity" promptText="Seleccione una categoría..." GridPane.columnIndex="1" GridPane.rowIndex="2" />
             </children>
+         <rowConstraints>
+            <RowConstraints />
+            <RowConstraints />
+            <RowConstraints />
+         </rowConstraints>
         </GridPane>
 
         <HBox spacing="10">
             <children>
-                <Button onAction="#onAgregar" text="Guardar Producto" style="-fx-background-color: #2ecc71; -fx-text-fill: white;" />
-                <Button   onAction="#onEliminar" text="Eliminar Seleccionado" style="-fx-background-color: #e74c3c; -fx-text-fill: white;" />
+                <Button onAction="#onAgregar" style="-fx-background-color: #2ecc71; -fx-text-fill: white;" text="Guardar " />
+                <Button onAction="#onEliminar" style="-fx-background-color: #e74c3c; -fx-text-fill: white;" text="Eliminar " />
+            <Button onAction="#onEditar" style="-fx-background-color: #000000; -fx-text-fill: white ;" text="Editar" />
             </children>
         </HBox>
 
-        <Separator />
-
-        <HBox spacing="10" alignment="CENTER_LEFT">
-            <Label text="Buscar:" style="-fx-font-weight: bold;" />
-            <TextField fx:id="txtBusqueda" promptText="Filtrar por nombre o código..." HBox.hgrow="ALWAYS" />
+        <HBox alignment="CENTER_LEFT" spacing="10">
+            <Label style="-fx-font-weight: bold;" text="Buscar:" />
+            <TextField fx:id="txtBusqueda" promptText="Filtrar por nombre o código..." />
         </HBox>
+
+        <Separator />
 
         <TableView fx:id="tableProductos" VBox.vgrow="ALWAYS">
             <columns>

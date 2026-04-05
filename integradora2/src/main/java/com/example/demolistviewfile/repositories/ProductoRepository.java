@@ -6,7 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ProductoRepository {
-    private final String FILE_NAME = "inventario.txt";
+    private final String FILE_NAME = "persons.csv";
 
     public void saveAll(List<Producto> productos) {
         try (PrintWriter writer = new PrintWriter(new FileWriter(FILE_NAME))) {
