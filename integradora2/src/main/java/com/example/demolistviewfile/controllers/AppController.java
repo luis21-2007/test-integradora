@@ -2,6 +2,7 @@ package com.example.demolistviewfile.controllers;
 
 import com.example.demolistviewfile.models.Producto;
 import com.example.demolistviewfile.repositories.ProductoRepository;
+import com.example.demolistviewfile.services.ProductoService;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
@@ -10,10 +11,7 @@ import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.control.ComboBox;
-
-import java.io.IOException;
 import java.util.ArrayList;
-import java.util.List;
 
 public class AppController {
     @FXML private TableView<Producto> tableProductos;
@@ -28,55 +26,47 @@ public class AppController {
 
     private ObservableList<Producto> masterData = FXCollections.observableArrayList();
     private ProductoRepository repository = new ProductoRepository();
+    private ProductoService productoService = new ProductoService();
+
 
     @FXML
     public void initialize() {
-        // 1. Configurar columnas (Vinculan con los atributos de la clase Producto)
+        // 1. Configurar columnas
         colCodigo.setCellValueFactory(new PropertyValueFactory<>("codigo"));
         colNombre.setCellValueFactory(new PropertyValueFactory<>("nombre"));
         colPrecio.setCellValueFactory(new PropertyValueFactory<>("precio"));
         colStock.setCellValueFactory(new PropertyValueFactory<>("stock"));
         colCat.setCellValueFactory(new PropertyValueFactory<>("categoria"));
 
-        // Definimos las opciones del ComboBox
-        ObservableList<String> opciones = FXCollections.observableArrayList(
-                "Lácteos",
-                "Limpieza",
-                "Frutas y Verduras",
-                "Carnes"
-        );
-        // Asignamos las opciones al ComboBox
-        cmbCategoria.setItems(opciones);
+        // 2. Configurar ComboBox
+        cmbCategoria.setItems(FXCollections.observableArrayList(
+                "Lácteos", "Limpieza", "Frutas y Verduras", "Carnes"
+        ));
 
-        // 2. Cargar datos iniciales desde el archivo
-        masterData.addAll(repository.loadAll());
+        // 3. Cargar datos usando el SERVICIO (limpia la lista y carga)
+        productoService.cargarDatos(masterData);
 
-        // 3. Búsqueda/Filtrado en tiempo real
+        // 4. Configurar Filtrado y Ordenamiento
         FilteredList<Producto> filteredData = new FilteredList<>(masterData, p -> true);
-        txtBusqueda.textProperty().addListener((obs, oldVal, newVal) -> {
-            filteredData.setPredicate(p -> {
-                if (newVal == null || newVal.isEmpty()) return true;
-                String lower = newVal.toLowerCase();
-                return p.getNombre().toLowerCase().contains(lower) ||
-                        p.getCodigo().toLowerCase().contains(lower);
-            });
-        });
 
-        // 4. Ordenamiento y vinculación con la tabla
+        // OPCIONAL: Esto permite que la tabla se pueda ordenar por columnas (clic en cabecera)
         SortedList<Producto> sortedData = new SortedList<>(filteredData);
         sortedData.comparatorProperty().bind(tableProductos.comparatorProperty());
 
-        // IMPORTANTE: Aquí se separan las dos acciones
         tableProductos.setItems(sortedData);
+
+        // 5. Listener de Búsqueda (Llamando al servicio)
+        txtBusqueda.textProperty().addListener((obs, oldVal, newVal) -> {
+            productoService.configurarFiltro(filteredData, newVal);
+        });
+
+        // 6. Listener de Selección (Para llenar los campos al hacer clic en la fila)
         tableProductos.getSelectionModel().selectedItemProperty().addListener((obs, oldSelection, newSelection) -> {
             if (newSelection != null) {
-                // 'newSelection' es el objeto
                 txtNombre.setText(newSelection.getNombre());
                 txtCodigo.setText(newSelection.getCodigo());
                 txtPrecio.setText(String.valueOf(newSelection.getPrecio()));
                 txtStock.setText(String.valueOf(newSelection.getStock()));
-
-                // Para el ComboBox que acabas de crear:
                 cmbCategoria.setValue(newSelection.getCategoria());
             }
         });
@@ -85,105 +75,105 @@ public class AppController {
     @FXML
     private void onAgregar() {
         try {
-            // Validar campos vacíos
+            // 1. Validación básica de campos vacíos (UI)
             if (txtCodigo.getText().isEmpty() || txtNombre.getText().isEmpty() ||
-                    txtPrecio.getText().isEmpty() || txtStock.getText().isEmpty()) {
+                    txtPrecio.getText().isEmpty() || cmbCategoria.getValue() == null) {
                 mostrarAlerta("Error", "Todos los campos son obligatorios.");
                 return;
             }
 
-            // Validar nombre
-            if (txtNombre.getText().length() < 3) {
-                mostrarAlerta("Error", "El nombre debe tener al menos 3 caracteres.");
-                return;
-            }
+            // 2. Crear el objeto temporal con los datos de la vista
+            // (El manejo de errores numéricos se queda en el try-catch)
+            Producto p = new Producto(
+                    txtCodigo.getText(),
+                    txtNombre.getText(),
+                    Double.parseDouble(txtPrecio.getText()),
+                    Integer.parseInt(txtStock.getText()),
+                    cmbCategoria.getValue()
+            );
 
-            //  Validar duplicado
-             String nuevoCodigo = txtCodigo.getText();
-            boolean existe = masterData.stream().anyMatch(p -> p.getCodigo().equalsIgnoreCase(nuevoCodigo));
-            if (existe) {
-                mostrarAlerta("Error", "El código del producto ya existe.");
-                return;
-            }
+            // 3. Delegar TODA la lógica al servicio
+            productoService.registrarProducto(p, masterData);
 
-            // Validar números
-            double precio = Double.parseDouble(txtPrecio.getText());
-            int stock = Integer.parseInt(txtStock.getText());
-
-            if (precio <= 0 || stock < 0) {
-                mostrarAlerta("Error", "El precio debe ser > 0 y el stock >= 0.");
-                return;
-            }
-
-            //Guardar
-            Producto p = new Producto(nuevoCodigo, txtNombre.getText(), precio, stock, cmbCategoria.getValue());
-            masterData.add(p);
-            repository.saveAll(new ArrayList<>(masterData)); // Persistencia obligatoria = tiene que estar para guardarlo todo
-
+            // 4. Feedback de éxito
             limpiarCampos();
             lblMsg.setText("Producto agregado con éxito.");
 
         } catch (NumberFormatException e) {
-            //excepciones
-            mostrarAlerta("Error de formato", "Precio y Stock deben ser valores numéricos.");
+            mostrarAlerta("Error de formato", "Precio y Stock deben ser valores numéricos válidos.");
+        } catch (IllegalArgumentException e) {
+            // Aquí capturamos los mensajes que enviamos desde el Service
+            mostrarAlerta("Error de validación", e.getMessage());
+        } catch (Exception e) {
+            mostrarAlerta("Error inesperado", "Ocurrió un error al guardar: " + e.getMessage());
         }
     }
 
     @FXML
     private void onEliminar() {
+        // 1. Obtener selección
         Producto seleccionado = tableProductos.getSelectionModel().getSelectedItem();
 
-        if (seleccionado != null) {
-            // Confirmación obligatoria = PREGUNTA SOLICITADA POR EL PROGRAMA
-            Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
-            alert.setTitle("Confirmar Eliminación");
-            alert.setHeaderText("¿Borrar producto: " + seleccionado.getNombre() + "?");
-
-            if (alert.showAndWait().get() == ButtonType.OK) {
-                masterData.remove(seleccionado);
-                repository.saveAll(new ArrayList<>(masterData)); // Actualizar archivo
-                lblMsg.setText("Producto eliminado.");
-            }
-        } else {
+        // 2. Validar selección
+        if (seleccionado == null) {
             mostrarAlerta("Atención", "Selecciona un producto de la tabla.");
+            return;
+        }
+
+        // 3. Confirmación (Responsabilidad de la UI)
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.setTitle("Confirmar Eliminación");
+        alert.setHeaderText("¿Borrar producto: " + seleccionado.getNombre() + "?");
+
+        if (alert.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK) {
+            try {
+                // 4. Delegar la eliminación y persistencia al servicio
+                productoService.eliminarProducto(seleccionado, masterData);
+
+                lblMsg.setText("Producto eliminado con éxito.");
+            } catch (Exception e) {
+                mostrarAlerta("Error", "No se pudo eliminar el producto: " + e.getMessage());
+            }
         }
     }
     @FXML
     private void onEditar() {
-            Producto newproducto = tableProductos.getSelectionModel().getSelectedItem();
+        Producto seleccionado = tableProductos.getSelectionModel().getSelectedItem();
 
-            if (newproducto == null) {
-                mostrarAlerta("Atención", "Selecciona un producto de la tabla para editar.");
+        if (seleccionado == null) {
+            mostrarAlerta("Atención", "Selecciona un producto de la tabla para editar.");
+            return;
+        }
+
+        try {
+            // Validamos vacíos rápido en la UI
+            if (txtNombre.getText().isEmpty() || txtPrecio.getText().isEmpty()) {
+                mostrarAlerta("Error", "Los campos no pueden estar vacíos.");
                 return;
             }
 
-            try {
-                if (txtNombre.getText().isEmpty() || txtPrecio.getText().isEmpty() || txtStock.getText().isEmpty()) {
-                    mostrarAlerta("Error", "Los campos no pueden estar vacíos.");
-                    return;
-                }
+            // Llamamos al servicio para procesar el cambio
+            productoService.actualizarProducto(
+                    seleccionado,
+                    txtNombre.getText(),
+                    txtPrecio.getText(),
+                    Integer.parseInt(txtStock.getText()),
+                    cmbCategoria.getValue(),
+                    masterData
+            );
 
-                double nuevoPrecio = Double.parseDouble(txtPrecio.getText());
-                int nuevoStock = Integer.parseInt(txtStock.getText());
-                // Modificamos los atributos del objeto que ya está en la lista masterData
-                newproducto.setNombre(txtNombre.getText());
-                newproducto.setPrecio(nuevoPrecio);
-                newproducto.setStock(nuevoStock);
-                newproducto.setCategoria(cmbCategoria.getValue());
+            // Actualizamos la interfaz
+            tableProductos.refresh(); // Refresca visualmente la fila editada
+            limpiarCampos();
+            txtCodigo.setEditable(true); // Desbloqueamos el código si estaba bloqueado
+            lblMsg.setText("Producto actualizado con éxito.");
 
-                // 4. Refrescar y Persistir
-                tableProductos.refresh();
-                repository.saveAll(new ArrayList<>(masterData));
-
-                limpiarCampos();
-                txtCodigo.setEditable(true);
-                lblMsg.setText("Producto actualizado con éxito.");
-
-            } catch (NumberFormatException e) {
-                mostrarAlerta("Error de formato", "Precio y Stock deben ser numéricos.");
-            }
+        } catch (NumberFormatException e) {
+            mostrarAlerta("Error", "El stock debe ser un número entero.");
+        } catch (Exception e) {
+            mostrarAlerta("Error", e.getMessage());
         }
-
+    }
     private void limpiarCampos() {
         txtCodigo.clear();
         txtNombre.clear();
