@@ -1,4 +1,4 @@
 package com.example.integradoranew3.controllers;
 
-public class producto {
+public class ProductoController {
 }
